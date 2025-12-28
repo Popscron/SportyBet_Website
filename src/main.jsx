@@ -3,11 +3,14 @@ import "./index.css";
 import App from "./App.jsx";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./Context/AuthContext.jsx";
+import { AppToggleProvider } from "./Context/AppToggleContext.jsx";
 
 createRoot(document.getElementById("root")).render(
-  <AuthProvider>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </AuthProvider>
+  <BrowserRouter>
+    <AppToggleProvider>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </AppToggleProvider>
+  </BrowserRouter>
 );

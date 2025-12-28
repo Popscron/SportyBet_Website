@@ -15,8 +15,6 @@ export const AuthProvider = ({ children }) => {
         `${backend_URL}/auth/me`,
         {
           withCredentials: true,
-        },
-        {
           headers: { "Content-Type": "application/json" },
         }
       );

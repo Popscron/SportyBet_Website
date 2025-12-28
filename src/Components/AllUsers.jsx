@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { FaRegTrashAlt } from "react-icons/fa";
+import { FaRegTrashAlt, FaEdit } from "react-icons/fa";
 import { backend_URL } from "../config/config";
 import { Link } from "react-router-dom";
+import EditUserModal from "./EditUserModal";
 
 const Users = () => {
   const [deleteModelOpen, setDeleteModelOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [userID, setUserID] = useState("");
@@ -177,11 +180,21 @@ const Users = () => {
                       </button>
                     </td>
                           <td className="px-8 sm:px-10 py-4 whitespace-nowrap">
-                      <FaRegTrashAlt
-                        title="Delete User"
-                              className="text-red-400 cursor-pointer hover:text-red-300 hover:scale-125 transition-all duration-300 w-4 h-4 sm:w-5 sm:h-5"
-                        onClick={() => handleDeleteModel(user._id)}
-                      />
+                      <div className="flex items-center gap-3">
+                        <FaEdit
+                          title="Edit User"
+                          className="text-blue-400 cursor-pointer hover:text-blue-300 hover:scale-125 transition-all duration-300 w-4 h-4 sm:w-5 sm:h-5"
+                          onClick={() => {
+                            setSelectedUserId(user._id);
+                            setEditModalOpen(true);
+                          }}
+                        />
+                        <FaRegTrashAlt
+                          title="Delete User"
+                          className="text-red-400 cursor-pointer hover:text-red-300 hover:scale-125 transition-all duration-300 w-4 h-4 sm:w-5 sm:h-5"
+                          onClick={() => handleDeleteModel(user._id)}
+                        />
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -234,6 +247,31 @@ const Users = () => {
           </div>
         </div>
       )}
+
+      {/* Edit User Modal */}
+      <EditUserModal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setSelectedUserId(null);
+        }}
+        userId={selectedUserId}
+        onUpdateSuccess={() => {
+          // Refresh users list after successful update
+          const getUsers = async () => {
+            setLoading(true);
+            try {
+              const response = await axios.get(`${backend_URL}/admin/getAllUsers`);
+              setUsers(response.data.allUsers);
+            } catch (error) {
+              console.error("Error fetching users:", error);
+            } finally {
+              setLoading(false);
+            }
+          };
+          getUsers();
+        }}
+      />
     </React.Fragment>
   );
 };
