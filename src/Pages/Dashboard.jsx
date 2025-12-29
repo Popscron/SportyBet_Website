@@ -11,6 +11,7 @@ const Dashboard = () => {
     { to: "/IOSHomeScreen", title: "Banners", icon: "📱", gradient: "from-indigo-500 to-purple-500", delay: "500" },
     { to: "/match-uploaded", title: "Match Uploaded", icon: "⚽", gradient: "from-teal-500 to-cyan-500", delay: "600" },
     { to: "/password-change-requests", title: "Password Change Requests", icon: "🔐", gradient: "from-gray-500 to-slate-500", delay: "700" },
+    { to: "/device-requests", title: "Device Requests", icon: "📱", gradient: "from-cyan-500 to-blue-500", delay: "800" },
   ];
 
   return (

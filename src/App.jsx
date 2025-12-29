@@ -17,6 +17,7 @@ import IOSHomeScreen from "./Components/IOSHomeScreen";
 import MatchUploaded from "./Components/MatchUploaded";
 import UserAddon from "./Components/UserAddon";
 import PasswordChangeRequests from "./Components/PasswordChangeRequests";
+import DeviceRequests from "./Components/DeviceRequests";
 import { useAuth } from "./Context/AuthContext";
 
 // 1Win imports
@@ -167,6 +168,7 @@ const App = () => {
           <Route path="/match-uploaded" element={<MatchUploaded />} />
           <Route path="/user-addons/:userId" element={<UserAddon />} />
           <Route path="/password-change-requests" element={<PasswordChangeRequests />} />
+          <Route path="/device-requests" element={<DeviceRequests />} />
         </Route>
         <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
       </Routes>
