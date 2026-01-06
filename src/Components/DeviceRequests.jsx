@@ -35,6 +35,10 @@ const DeviceRequests = () => {
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [rejectReasons, setRejectReasons] = useState({});
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [showDeviceModal, setShowDeviceModal] = useState(false);
+  const [activeDevices, setActiveDevices] = useState([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState(null);
+  const [loadingDevices, setLoadingDevices] = useState(false);
 
   const fetchRequests = async (status) => {
     setLoading(true);
@@ -71,20 +75,52 @@ const DeviceRequests = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
-  const approveRequest = async (id) => {
+  const fetchActiveDevices = async (requestId) => {
+    setLoadingDevices(true);
+    try {
+      const res = await axios.get(
+        `${backend_URL}/admin/device-requests/${requestId}/devices`,
+        { withCredentials: true }
+      );
+      setActiveDevices(res.data?.data || []);
+      setShowDeviceModal(true);
+    } catch (e) {
+      console.error("Error fetching active devices:", e);
+      alert(e.response?.data?.message || e.message || "Failed to load devices");
+    } finally {
+      setLoadingDevices(false);
+    }
+  };
+
+  const approveRequest = async (id, deviceIdToLogout = null) => {
     try {
       setActionLoadingId(id);
+      const body = deviceIdToLogout ? { deviceIdToLogout } : {};
       await axios.put(
         `${backend_URL}/admin/device-requests/${id}/approve`,
-        {},
+        body,
         { withCredentials: true }
       );
       await fetchRequests(filter);
+      setShowDeviceModal(false);
+      setSelectedDeviceId(null);
+      setActiveDevices([]);
       alert("Device request approved successfully!");
     } catch (e) {
       alert(e.response?.data?.message || e.message || "Failed to approve request");
     } finally {
       setActionLoadingId(null);
+    }
+  };
+
+  const handleApproveWithDevice = () => {
+    if (!selectedDeviceId) {
+      alert("Please select a device to logout");
+      return;
+    }
+    const requestId = selectedRequest?._id;
+    if (requestId) {
+      approveRequest(requestId, selectedDeviceId);
     }
   };
 
@@ -211,18 +247,21 @@ const DeviceRequests = () => {
                             {r.status === "pending" && (
                               <>
                                 <button
-                                  disabled={actionLoadingId === r._id}
-                                  className="px-3 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs sm:text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-green-500/25 transform hover:scale-105 active:scale-95 transition-all duration-300 relative overflow-hidden group"
-                                  onClick={() => approveRequest(r._id)}
+                                  disabled={loadingDevices || actionLoadingId === r._id}
+                                  className="px-3 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs sm:text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-blue-500/25 transform hover:scale-105 active:scale-95 transition-all duration-300 relative overflow-hidden group"
+                                  onClick={() => {
+                                    setSelectedRequest(r);
+                                    fetchActiveDevices(r._id);
+                                  }}
                                 >
                                   <span className="relative z-10 flex items-center justify-center gap-2">
-                                    {actionLoadingId === r._id ? (
+                                    {loadingDevices && selectedRequest?._id === r._id ? (
                                       <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                       </svg>
                                     ) : (
-                                      "Approve"
+                                      "View Devices"
                                     )}
                                   </span>
                                   <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
@@ -278,6 +317,105 @@ const DeviceRequests = () => {
           </div>
         </div>
       </div>
+
+      {/* Device Selection Modal */}
+      {showDeviceModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl shadow-2xl border border-white/10 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-white">Select Device to Logout</h3>
+                <button
+                  onClick={() => {
+                    setShowDeviceModal(false);
+                    setSelectedDeviceId(null);
+                    setActiveDevices([]);
+                    setSelectedRequest(null);
+                  }}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {activeDevices.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-400">No active devices found</p>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-3 mb-6">
+                    {activeDevices.map((device) => (
+                      <label
+                        key={device._id}
+                        className={`flex items-start p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                          selectedDeviceId === device.deviceId
+                            ? "border-green-500 bg-green-500/10"
+                            : "border-gray-700 bg-gray-800/50 hover:border-gray-600"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="device"
+                          value={device.deviceId}
+                          checked={selectedDeviceId === device.deviceId}
+                          onChange={() => setSelectedDeviceId(device.deviceId)}
+                          className="mt-1 mr-3"
+                        />
+                        <div className="flex-1">
+                          <div className="text-white font-semibold mb-1">
+                            {device.deviceName || "Unknown Device"}
+                          </div>
+                          <div className="text-sm text-gray-400 space-y-1">
+                            <div>Platform: {device.platform || "Unknown"}</div>
+                            <div>Device ID: {device.deviceId}</div>
+                            {device.lastLoginAt && (
+                              <div>Last Login: {new Date(device.lastLoginAt).toLocaleString()}</div>
+                            )}
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        setShowDeviceModal(false);
+                        setSelectedDeviceId(null);
+                        setActiveDevices([]);
+                        setSelectedRequest(null);
+                      }}
+                      className="flex-1 px-4 py-3 rounded-xl bg-gray-700 text-white font-semibold hover:bg-gray-600 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleApproveWithDevice}
+                      disabled={!selectedDeviceId || actionLoadingId === selectedRequest?._id}
+                      className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-green-500/25 transition-all"
+                    >
+                      {actionLoadingId === selectedRequest?._id ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Approving...
+                        </span>
+                      ) : (
+                        "Approve & Logout"
+                      )}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
