@@ -91,7 +91,10 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
     }));
   };
 
-  const handleResetPassword = async () => {
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (!newPassword || newPassword.length < 6) {
       toast.error('Password must be at least 6 characters long');
       return;
