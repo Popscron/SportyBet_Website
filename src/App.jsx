@@ -18,6 +18,7 @@ import MatchUploaded from "./Components/MatchUploaded";
 import UserAddon from "./Components/UserAddon";
 import PasswordChangeRequests from "./Components/PasswordChangeRequests";
 import DeviceRequests from "./Components/DeviceRequests";
+import PendingRegistrations from "./Components/PendingRegistrations";
 import { useAuth } from "./Context/AuthContext";
 
 // 1Win imports
@@ -169,6 +170,7 @@ const App = () => {
           <Route path="/user-addons/:userId" element={<UserAddon />} />
           <Route path="/password-change-requests" element={<PasswordChangeRequests />} />
           <Route path="/device-requests" element={<DeviceRequests />} />
+          <Route path="/pending-registrations" element={<PendingRegistrations />} />
         </Route>
         <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
       </Routes>

@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 const Dashboard = () => {
   const dashboardCards = [
     { to: "/users", title: "Users", icon: "👥", gradient: "from-blue-500 to-cyan-500", delay: "0" },
+    { to: "/pending-registrations", title: "Pending Registrations", icon: "⏳", gradient: "from-orange-500 to-red-500", delay: "50" },
     { to: "/activeUsers", title: "Active Users", icon: "✅", gradient: "from-green-500 to-emerald-500", delay: "100" },
     { to: "/disableUsers", title: "Disable Users", icon: "🚫", gradient: "from-red-500 to-rose-500", delay: "200" },
     { to: "/adduser", title: "Add User", icon: "➕", gradient: "from-purple-500 to-pink-500", delay: "300" },
