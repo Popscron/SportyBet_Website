@@ -113,7 +113,7 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
       );
 
       if (response.data.success) {
-        toast.success('Password has been set successfully! User will be prompted to change it on next login.');
+        toast.success('Password has been set successfully!');
         setNewPassword('');
         setConfirmPassword('');
         setShowPasswordReset(false);
