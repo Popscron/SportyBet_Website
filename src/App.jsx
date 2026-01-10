@@ -3,6 +3,8 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useAppToggle } from "./Context/AppToggleContext";
 import Header from "./Layout/Header";
 import PageLoader from "./Components/PageLoader";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // SportyBet imports
 import SportyBetLogin from "./Pages/Login";
@@ -78,6 +80,18 @@ const App = () => {
   return (
     <div className="min-h-screen">
       <Header />
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
       <Routes>
         {/* 1Win Routes */}
         <Route
