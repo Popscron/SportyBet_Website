@@ -15,6 +15,13 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
     expiry: '',
     accountStatus: 'Active',
   });
+  const [smsPoints, setSmsPoints] = useState(0);
+  const [pointsToAdd, setPointsToAdd] = useState('');
+  const [loadingPoints, setLoadingPoints] = useState(false);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   useEffect(() => {
     if (isOpen && userId) {
@@ -37,6 +44,20 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
         expiry: user.expiry ? new Date(user.expiry).toISOString().split('T')[0] : '',
         accountStatus: user.accountStatus || 'Active',
       });
+
+      // Fetch SMS points
+      try {
+        const pointsResponse = await axios.get(`${backend_URL}/user/sms-points`, {
+          params: { userId: userId }
+        });
+        if (pointsResponse.data.success) {
+          setSmsPoints(pointsResponse.data.data.smsPoints || 0);
+        }
+      } catch (error) {
+        console.error('Error fetching SMS points:', error);
+        // Set to 0 if error (user might not have points field yet)
+        setSmsPoints(0);
+      }
     } catch (error) {
       console.error('Error fetching user:', error);
       toast.error('Failed to fetch user data');
@@ -68,6 +89,78 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleResetPassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters long');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    setResettingPassword(true);
+    try {
+      const response = await axios.put(
+        `${backend_URL}/admin/set-user-password/${userId}`,
+        { newPassword },
+        {
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+
+      if (response.data.success) {
+        toast.success('Password has been set successfully! User will be prompted to change it on next login.');
+        setNewPassword('');
+        setConfirmPassword('');
+        setShowPasswordReset(false);
+      } else {
+        toast.error(response.data.message || 'Failed to set password');
+      }
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      toast.error(error.response?.data?.message || 'Failed to set password');
+    } finally {
+      setResettingPassword(false);
+    }
+  };
+
+  const handleLoadPoints = async () => {
+    const points = parseInt(pointsToAdd);
+    if (!points || points <= 0) {
+      toast.error('Please enter a valid number of points');
+      return;
+    }
+
+    setLoadingPoints(true);
+    try {
+      const response = await axios.post(
+        `${backend_URL}/admin/load-sms-points`,
+        {
+          userId: userId,
+          points: points
+        },
+        {
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+
+      if (response.data.success) {
+        toast.success(`Successfully loaded ${points} SMS points!`);
+        setSmsPoints(response.data.data.smsPoints);
+        setPointsToAdd('');
+      } else {
+        toast.error(response.data.message || 'Failed to load points');
+      }
+    } catch (error) {
+      console.error('Error loading SMS points:', error);
+      toast.error(error.response?.data?.message || 'Failed to load SMS points');
+    } finally {
+      setLoadingPoints(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -279,6 +372,107 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
                 className="w-full px-4 py-3 bg-gray-800/50 border border-white/10 rounded-xl text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
                 disabled={loading}
               />
+            </div>
+
+            {/* SMS Points Section */}
+            <div className="mt-6 pt-6 border-t border-white/10">
+              <div className="flex items-center justify-between mb-4">
+                <label className="block text-sm font-semibold text-gray-300">SMS Points</label>
+              </div>
+              
+              <div className="bg-gray-800/30 rounded-xl p-4 mb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-gray-400">Current Points:</span>
+                  <span className="text-2xl font-bold text-purple-400">{smsPoints}</span>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-gray-300">
+                  Add Points
+                </label>
+                <div className="flex gap-3">
+                  <input
+                    type="number"
+                    min="1"
+                    value={pointsToAdd}
+                    onChange={(e) => setPointsToAdd(e.target.value)}
+                    placeholder="Enter points to add"
+                    className="flex-1 px-4 py-3 bg-gray-800/50 border border-white/10 rounded-xl text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                    disabled={loadingPoints || loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleLoadPoints}
+                    disabled={loadingPoints || loading || !pointsToAdd || parseInt(pointsToAdd) <= 0}
+                    className="px-6 py-3 bg-gradient-to-r from-green-600 via-emerald-600 to-green-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-green-500/25 transform hover:scale-105 active:scale-95 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loadingPoints ? 'Loading...' : 'Load Points'}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Enter the number of SMS points to add to this user's account
+                </p>
+              </div>
+            </div>
+
+            {/* Password Reset Section */}
+            <div className="mt-6 pt-6 border-t border-white/10">
+              <div className="flex items-center justify-between mb-4">
+                <label className="block text-sm font-semibold text-gray-300">Password Management</label>
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordReset(!showPasswordReset)}
+                  className="px-4 py-2 bg-gradient-to-r from-orange-600 via-red-600 to-orange-600 text-white rounded-lg font-semibold text-sm shadow-lg hover:shadow-orange-500/25 transform hover:scale-105 active:scale-95 transition-all duration-300"
+                >
+                  {showPasswordReset ? 'Cancel' : 'Reset Password'}
+                </button>
+              </div>
+              
+              {showPasswordReset && (
+                <div className="bg-gray-800/30 rounded-xl p-4 space-y-4">
+                  <p className="text-sm text-gray-400 mb-3">
+                    Set a new password for this user. The user will be prompted to change it on their next login.
+                  </p>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-300 mb-2">
+                      New Password
+                    </label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Enter new password (min 6 characters)"
+                      className="w-full px-4 py-3 bg-gray-800/50 border border-white/10 rounded-xl text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all"
+                      disabled={resettingPassword}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-300 mb-2">
+                      Confirm Password
+                    </label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm new password"
+                      className="w-full px-4 py-3 bg-gray-800/50 border border-white/10 rounded-xl text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all"
+                      disabled={resettingPassword}
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleResetPassword}
+                    disabled={resettingPassword || !newPassword || !confirmPassword || newPassword.length < 6 || newPassword !== confirmPassword}
+                    className="w-full px-6 py-3 bg-gradient-to-r from-orange-600 via-red-600 to-orange-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-orange-500/25 transform hover:scale-105 active:scale-95 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {resettingPassword ? 'Setting Password...' : 'Set Password'}
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* User Devices Section */}
