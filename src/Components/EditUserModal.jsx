@@ -22,10 +22,13 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [resettingPassword, setResettingPassword] = useState(false);
+  const [devices, setDevices] = useState([]);
+  const [loadingDevices, setLoadingDevices] = useState(false);
 
   useEffect(() => {
     if (isOpen && userId) {
       fetchUser();
+      fetchDevices();
     }
   }, [isOpen, userId]);
 
@@ -64,6 +67,29 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
       onClose();
     } finally {
       setFetching(false);
+    }
+  };
+
+  const fetchDevices = async () => {
+    if (!userId) return;
+    
+    setLoadingDevices(true);
+    try {
+      const response = await axios.get(`${backend_URL}/admin/users/${userId}/devices`, {
+        withCredentials: true
+      });
+      
+      if (response.data.success) {
+        setDevices(response.data.data.devices || []);
+      } else {
+        setDevices([]);
+      }
+    } catch (error) {
+      console.error('Error fetching devices:', error);
+      setDevices([]);
+      // Don't show error toast - devices might not exist yet
+    } finally {
+      setLoadingDevices(false);
     }
   };
 
@@ -488,7 +514,67 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
                 <label className="block text-sm font-semibold text-gray-300">User Devices</label>
               </div>
               
-              <p className="text-gray-400 text-center py-4">No devices found.</p>
+              {loadingDevices ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="flex flex-col items-center gap-2">
+                    <svg className="animate-spin h-6 w-6 text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p className="text-sm text-gray-400">Loading devices...</p>
+                  </div>
+                </div>
+              ) : devices.length === 0 ? (
+                <p className="text-gray-400 text-center py-4">No devices found.</p>
+              ) : (
+                <div className="space-y-3">
+                  {devices.map((device) => (
+                    <div
+                      key={device._id}
+                      className="bg-gray-800/30 rounded-xl p-4 border border-white/10"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="text-white font-semibold">
+                              {device.deviceName || "Unknown Device"}
+                            </h4>
+                            {device.isActive && (
+                              <span className="px-2 py-0.5 bg-green-500/20 text-green-300 text-xs rounded-full border border-green-500/30">
+                                Active
+                              </span>
+                            )}
+                            {!device.isActive && (
+                              <span className="px-2 py-0.5 bg-gray-500/20 text-gray-300 text-xs rounded-full border border-gray-500/30">
+                                Inactive
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-400 space-y-1">
+                            {device.modelName && (
+                              <div className="text-xs text-gray-500">
+                                Model: {device.modelName}
+                              </div>
+                            )}
+                            <div>Platform: {device.platform || "Unknown"}</div>
+                            <div>Device Type: {device.deviceType || "Unknown"}</div>
+                            <div>Device ID: {device.deviceId}</div>
+                            {device.lastLoginAt && (
+                              <div>Last Login: {formatDate(device.lastLoginAt)}</div>
+                            )}
+                            {device.osVersion && (
+                              <div>OS Version: {device.osVersion}</div>
+                            )}
+                            {device.appVersion && (
+                              <div>App Version: {device.appVersion}</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex gap-4 pt-4">

@@ -369,6 +369,11 @@ const DeviceRequests = () => {
                             {device.deviceName || "Unknown Device"}
                           </div>
                           <div className="text-sm text-gray-400 space-y-1">
+                            {device.modelName && (
+                              <div className="text-xs text-gray-500 mb-1">
+                                {device.modelName}
+                              </div>
+                            )}
                             <div>Platform: {device.platform || "Unknown"}</div>
                             <div>Device ID: {device.deviceId}</div>
                             {device.lastLoginAt && (
