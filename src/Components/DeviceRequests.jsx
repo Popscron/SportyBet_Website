@@ -37,7 +37,7 @@ const DeviceRequests = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showDeviceModal, setShowDeviceModal] = useState(false);
   const [activeDevices, setActiveDevices] = useState([]);
-  const [selectedDeviceId, setSelectedDeviceId] = useState(null);
+  const [selectedDeviceIds, setSelectedDeviceIds] = useState([]);
   const [loadingDevices, setLoadingDevices] = useState(false);
 
   const fetchRequests = async (status) => {
@@ -92,10 +92,10 @@ const DeviceRequests = () => {
     }
   };
 
-  const approveRequest = async (id, deviceIdToLogout = null) => {
+  const approveRequest = async (id, deviceIdsToLogout = null) => {
     try {
       setActionLoadingId(id);
-      const body = deviceIdToLogout ? { deviceIdToLogout } : {};
+      const body = deviceIdsToLogout && deviceIdsToLogout.length > 0 ? { deviceIdsToLogout } : {};
       await axios.put(
         `${backend_URL}/admin/device-requests/${id}/approve`,
         body,
@@ -103,7 +103,7 @@ const DeviceRequests = () => {
       );
       await fetchRequests(filter);
       setShowDeviceModal(false);
-      setSelectedDeviceId(null);
+      setSelectedDeviceIds([]);
       setActiveDevices([]);
       alert("Device request approved successfully!");
     } catch (e) {
@@ -114,13 +114,31 @@ const DeviceRequests = () => {
   };
 
   const handleApproveWithDevice = () => {
-    if (!selectedDeviceId) {
-      alert("Please select a device to logout");
+    if (!selectedDeviceIds || selectedDeviceIds.length === 0) {
+      alert("Please select at least one device to logout");
       return;
     }
     const requestId = selectedRequest?._id;
     if (requestId) {
-      approveRequest(requestId, selectedDeviceId);
+      approveRequest(requestId, selectedDeviceIds);
+    }
+  };
+
+  const handleDeviceToggle = (deviceId) => {
+    setSelectedDeviceIds((prev) => {
+      if (prev.includes(deviceId)) {
+        return prev.filter((id) => id !== deviceId);
+      } else {
+        return [...prev, deviceId];
+      }
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedDeviceIds.length === activeDevices.length) {
+      setSelectedDeviceIds([]);
+    } else {
+      setSelectedDeviceIds(activeDevices.map((device) => device.deviceId));
     }
   };
 
@@ -324,11 +342,11 @@ const DeviceRequests = () => {
           <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl shadow-2xl border border-white/10 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold text-white">Select Device to Logout</h3>
+                <h3 className="text-2xl font-bold text-white">Select Devices to Logout</h3>
                 <button
                   onClick={() => {
                     setShowDeviceModal(false);
-                    setSelectedDeviceId(null);
+                    setSelectedDeviceIds([]);
                     setActiveDevices([]);
                     setSelectedRequest(null);
                   }}
@@ -346,23 +364,32 @@ const DeviceRequests = () => {
                 </div>
               ) : (
                 <>
+                  <div className="mb-4 flex items-center justify-between">
+                    <button
+                      onClick={handleSelectAll}
+                      className="text-sm text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                    >
+                      {selectedDeviceIds.length === activeDevices.length ? "Deselect All" : "Select All"}
+                    </button>
+                    <span className="text-sm text-gray-400">
+                      {selectedDeviceIds.length} of {activeDevices.length} selected
+                    </span>
+                  </div>
                   <div className="space-y-3 mb-6">
                     {activeDevices.map((device) => (
                       <label
                         key={device._id}
                         className={`flex items-start p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                          selectedDeviceId === device.deviceId
+                          selectedDeviceIds.includes(device.deviceId)
                             ? "border-green-500 bg-green-500/10"
                             : "border-gray-700 bg-gray-800/50 hover:border-gray-600"
                         }`}
                       >
                         <input
-                          type="radio"
-                          name="device"
-                          value={device.deviceId}
-                          checked={selectedDeviceId === device.deviceId}
-                          onChange={() => setSelectedDeviceId(device.deviceId)}
-                          className="mt-1 mr-3"
+                          type="checkbox"
+                          checked={selectedDeviceIds.includes(device.deviceId)}
+                          onChange={() => handleDeviceToggle(device.deviceId)}
+                          className="mt-1 mr-3 w-5 h-5 text-green-500 bg-gray-700 border-gray-600 rounded focus:ring-green-500 focus:ring-2"
                         />
                         <div className="flex-1">
                           <div className="text-white font-semibold mb-1">
@@ -389,7 +416,7 @@ const DeviceRequests = () => {
                     <button
                       onClick={() => {
                         setShowDeviceModal(false);
-                        setSelectedDeviceId(null);
+                        setSelectedDeviceIds([]);
                         setActiveDevices([]);
                         setSelectedRequest(null);
                       }}
@@ -399,7 +426,7 @@ const DeviceRequests = () => {
                     </button>
                     <button
                       onClick={handleApproveWithDevice}
-                      disabled={!selectedDeviceId || actionLoadingId === selectedRequest?._id}
+                      disabled={!selectedDeviceIds || selectedDeviceIds.length === 0 || actionLoadingId === selectedRequest?._id}
                       className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-green-500/25 transition-all"
                     >
                       {actionLoadingId === selectedRequest?._id ? (
