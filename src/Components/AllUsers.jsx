@@ -84,6 +84,29 @@ const Users = () => {
     }
   };
 
+  const clearUserDevices = async (userId, username) => {
+    if (!window.confirm(`Are you sure you want to clear all devices for ${username}? This will log them out from all devices.`)) {
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `${backend_URL}/admin/users/${userId}/clear-devices`,
+        {},
+        { withCredentials: true }
+      );
+
+      if (response.data.success) {
+        alert(`Successfully cleared ${response.data.data.devicesDeleted} device(s) for ${username}`);
+      } else {
+        alert(response.data.message || "Failed to clear devices");
+      }
+    } catch (error) {
+      console.error("Error clearing devices:", error);
+      alert(error.response?.data?.message || error.message || "Failed to clear devices");
+    }
+  };
+
   return (
     <React.Fragment>
       <main className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 p-4 sm:p-6 md:p-8">
@@ -189,6 +212,15 @@ const Users = () => {
                             setEditModalOpen(true);
                           }}
                         />
+                        <button
+                          title="Clear All Devices"
+                          onClick={() => clearUserDevices(user._id, user.username)}
+                          className="text-orange-400 hover:text-orange-300 hover:scale-125 transition-all duration-300"
+                        >
+                          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          </svg>
+                        </button>
                         <FaRegTrashAlt
                           title="Delete User"
                           className="text-red-400 cursor-pointer hover:text-red-300 hover:scale-125 transition-all duration-300 w-4 h-4 sm:w-5 sm:h-5"
