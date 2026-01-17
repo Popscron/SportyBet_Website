@@ -95,18 +95,31 @@ const DeviceRequests = () => {
   const approveRequest = async (id, deviceIdsToLogout = null) => {
     try {
       setActionLoadingId(id);
-      const body = deviceIdsToLogout && deviceIdsToLogout.length > 0 ? { deviceIdsToLogout } : {};
+      // Send deviceIdsToLogout as array, or single deviceIdToLogout if only one device
+      const body = deviceIdsToLogout && deviceIdsToLogout.length > 0 
+        ? { 
+            deviceIdsToLogout: deviceIdsToLogout, // Send array
+            deviceIdToLogout: deviceIdsToLogout.length === 1 ? deviceIdsToLogout[0] : null // Also send single for backward compatibility
+          } 
+        : {};
       await axios.put(
         `${backend_URL}/admin/device-requests/${id}/approve`,
         body,
-        { withCredentials: true }
+        { 
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
+          }
+        }
       );
       await fetchRequests(filter);
       setShowDeviceModal(false);
       setSelectedDeviceIds([]);
       setActiveDevices([]);
+      setSelectedRequest(null);
       alert("Device request approved successfully!");
     } catch (e) {
+      console.error("Approve request error:", e);
       alert(e.response?.data?.message || e.message || "Failed to approve request");
     } finally {
       setActionLoadingId(null);
