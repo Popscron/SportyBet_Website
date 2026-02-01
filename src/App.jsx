@@ -17,6 +17,7 @@ import SportyBetDisableUsers from "./Components/DisableUsers";
 import SportyBetExpiredUsers from "./Components/ExpiredUsers";
 import IOSHomeScreen from "./Components/IOSHomeScreen";
 import MatchUploaded from "./Components/MatchUploaded";
+import InstantFootballMatches from "./Pages/InstantFootballMatches";
 import UserAddon from "./Components/UserAddon";
 import PasswordChangeRequests from "./Components/PasswordChangeRequests";
 import DeviceRequests from "./Components/DeviceRequests";
@@ -181,6 +182,7 @@ const App = () => {
           <Route path="/expiredUsers" element={<SportyBetExpiredUsers />} />
           <Route path="/IOSHomeScreen" element={<IOSHomeScreen />} />
           <Route path="/match-uploaded" element={<MatchUploaded />} />
+          <Route path="/instant-football-matches" element={<InstantFootballMatches />} />
           <Route path="/user-addons/:userId" element={<UserAddon />} />
           <Route path="/password-change-requests" element={<PasswordChangeRequests />} />
           <Route path="/device-requests" element={<DeviceRequests />} />
