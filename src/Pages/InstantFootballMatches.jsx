@@ -16,6 +16,10 @@ const InstantFootballMatches = () => {
     awayOdd: "3.50",
     markets: "+69",
     league: "England",
+    homeBadgeUrl: "",
+    awayBadgeUrl: "",
+    homeBadgeFile: null,
+    awayBadgeFile: null,
   });
 
   useEffect(() => {
@@ -45,6 +49,12 @@ const InstantFootballMatches = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleFileChange = (e) => {
+    const { name, files } = e.target;
+    const file = files && files[0] ? files[0] : null;
+    setForm((prev) => ({ ...prev, [name]: file }));
+  };
+
   const resetForm = () => {
     setForm({
       home: "",
@@ -54,25 +64,42 @@ const InstantFootballMatches = () => {
       awayOdd: "3.50",
       markets: "+69",
       league: "England",
+      homeBadgeUrl: "",
+      awayBadgeUrl: "",
+      homeBadgeFile: null,
+      awayBadgeFile: null,
     });
   };
 
   const addMatch = async (e) => {
     e.preventDefault();
-    if (!form.home?.trim() || !form.away?.trim()) {
-      toast.warning("Home and Away team are required");
-      return;
-    }
     setSubmitting(true);
     try {
-      await axios.post(`${backend_URL}/instant-football/matches`, {
-        home: form.home.trim(),
-        away: form.away.trim(),
-        homeOdd: form.homeOdd || "2.00",
-        drawOdd: form.drawOdd || "3.00",
-        awayOdd: form.awayOdd || "3.50",
-        markets: form.markets || "+69",
-        league: form.league || "England",
+      // Use multipart/form-data so admin can upload badge images
+      const formData = new FormData();
+      formData.append("home", form.home.trim());
+      formData.append("away", form.away.trim());
+      formData.append("homeOdd", form.homeOdd || "2.00");
+      formData.append("drawOdd", form.drawOdd || "3.00");
+      formData.append("awayOdd", form.awayOdd || "3.50");
+      formData.append("markets", form.markets || "+69");
+      formData.append("league", form.league || "England");
+
+      // Optional: if admin picked local image files, send them; otherwise fall back to URL text
+      if (form.homeBadgeFile) {
+        formData.append("leftLogo", form.homeBadgeFile);
+      } else if (form.homeBadgeUrl?.trim()) {
+        formData.append("homeBadgeUrl", form.homeBadgeUrl.trim());
+      }
+
+      if (form.awayBadgeFile) {
+        formData.append("rightLogo", form.awayBadgeFile);
+      } else if (form.awayBadgeUrl?.trim()) {
+        formData.append("awayBadgeUrl", form.awayBadgeUrl.trim());
+      }
+
+      await axios.post(`${backend_URL}/instant-football/matches`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
       toast.success("Match added successfully");
       fetchMatches();
@@ -246,6 +273,49 @@ const InstantFootballMatches = () => {
                       value={form.awayOdd}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 rounded-lg bg-gray-900 border border-white/10 text-white focus:border-green-500 outline-none"
+                    />
+                  </div>
+                </div>
+                {/* Badge upload / URL inputs */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">
+                      Home badge (upload or URL)
+                    </label>
+                    <input
+                      type="file"
+                      name="homeBadgeFile"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="w-full text-sm text-gray-300 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-green-600 file:text-white file:text-sm hover:file:bg-green-700"
+                    />
+                    <input
+                      type="text"
+                      name="homeBadgeUrl"
+                      value={form.homeBadgeUrl}
+                      onChange={handleInputChange}
+                      placeholder="or paste image URL"
+                      className="mt-2 w-full px-4 py-2.5 rounded-xl bg-gray-900 border border-white/10 text-white placeholder-gray-500 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">
+                      Away badge (upload or URL)
+                    </label>
+                    <input
+                      type="file"
+                      name="awayBadgeFile"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="w-full text-sm text-gray-300 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-green-600 file:text-white file:text-sm hover:file:bg-green-700"
+                    />
+                    <input
+                      type="text"
+                      name="awayBadgeUrl"
+                      value={form.awayBadgeUrl}
+                      onChange={handleInputChange}
+                      placeholder="or paste image URL"
+                      className="mt-2 w-full px-4 py-2.5 rounded-xl bg-gray-900 border border-white/10 text-white placeholder-gray-500 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none"
                     />
                   </div>
                 </div>
