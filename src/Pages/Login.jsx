@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { backend_URL } from "../config/config.js";
 import { useAuth } from "../Context/AuthContext.jsx";
+import { ADMIN_TOKEN_KEY } from "../config/axiosInterceptors.js";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -37,8 +38,6 @@ const Login = () => {
         formData,
         {
           withCredentials: true,
-        },
-        {
           headers: { "Content-Type": "application/json" },
         }
       );
@@ -46,6 +45,9 @@ const Login = () => {
       setError(null);
       setSuccessMessage(response.data.message);
       setAuthUser(response.data?.user);
+      if (response.data?.token) {
+        localStorage.setItem(ADMIN_TOKEN_KEY, response.data.token);
+      }
       navigate("/");
     } catch (error) {
       setSuccessMessage(null);

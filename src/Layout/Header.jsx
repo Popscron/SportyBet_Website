@@ -4,6 +4,7 @@ import { useAuth } from "../Context/AuthContext";
 import { useAppToggle } from "../Context/AppToggleContext";
 import axios from "axios";
 import { backend_URL } from "../config/config";
+import { ADMIN_TOKEN_KEY } from "../config/axiosInterceptors";
 
 const Header = () => {
   const { setAuthUser, authUser } = useAuth();
@@ -45,6 +46,7 @@ const Header = () => {
           }
         );
         setAuthUser(null);
+        localStorage.removeItem(ADMIN_TOKEN_KEY);
         navigate("/login");
       } 
       // If logged into 1Win, just remove token and navigate
@@ -57,6 +59,7 @@ const Header = () => {
       // Even if logout fails, clear local state
       if (authUser) {
         setAuthUser(null);
+        localStorage.removeItem(ADMIN_TOKEN_KEY);
         navigate("/login");
       } else if (isOneWinAuthenticated) {
         localStorage.removeItem('admin_token');
