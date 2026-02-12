@@ -332,14 +332,17 @@ const InstantFootballMatches = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-1">League</label>
-                  <input
-                    type="text"
+                  <select
                     name="league"
                     value={form.league}
                     onChange={handleInputChange}
-                    placeholder="England"
-                    className="w-full px-4 py-2.5 rounded-xl bg-gray-900 border border-white/10 text-white placeholder-gray-500 focus:border-green-500 outline-none"
-                  />
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-900 border border-white/10 text-white focus:border-green-500 outline-none appearance-none cursor-pointer"
+                  >
+                    <option value="England">England</option>
+                    <option value="Spain">Spain</option>
+                    <option value="Germany">Germany</option>
+                    <option value="Champions">Champions</option>
+                  </select>
                 </div>
                 <div className="flex gap-3 pt-2">
                   <button

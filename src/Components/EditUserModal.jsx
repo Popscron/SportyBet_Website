@@ -35,7 +35,9 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
   const fetchUser = async () => {
     try {
       setFetching(true);
-      const response = await axios.get(`${backend_URL}/user/${userId}`);
+      const response = await axios.get(`${backend_URL}/user/${userId}`, {
+        withCredentials: true,
+      });
       const user = response.data.user;
       
       setFormData({
@@ -51,7 +53,8 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
       // Fetch SMS points
       try {
         const pointsResponse = await axios.get(`${backend_URL}/user/sms-points`, {
-          params: { userId: userId }
+          params: { userId: userId },
+          withCredentials: true,
         });
         if (pointsResponse.data.success) {
           setSmsPoints(pointsResponse.data.data.smsPoints || 0);
@@ -63,7 +66,8 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
       }
     } catch (error) {
       console.error('Error fetching user:', error);
-      toast.error('Failed to fetch user data');
+      const errMsg = error.response?.data?.message || error.response?.data?.error || 'Failed to fetch user data';
+      toast.error(errMsg);
       onClose();
     } finally {
       setFetching(false);
@@ -138,6 +142,7 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
         { newPassword },
         {
           headers: { 'Content-Type': 'application/json' },
+          withCredentials: true,
         }
       );
 
@@ -151,7 +156,8 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
       }
     } catch (error) {
       console.error('Error resetting password:', error);
-      toast.error(error.response?.data?.message || 'Failed to set password');
+      const errMsg = error.response?.data?.message || error.response?.data?.error || 'Failed to set password';
+      toast.error(errMsg);
     } finally {
       setResettingPassword(false);
     }
@@ -174,6 +180,7 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
         },
         {
           headers: { 'Content-Type': 'application/json' },
+          withCredentials: true,
         }
       );
 
@@ -186,7 +193,8 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
       }
     } catch (error) {
       console.error('Error loading SMS points:', error);
-      toast.error(error.response?.data?.message || 'Failed to load SMS points');
+      const errMsg = error.response?.data?.message || error.response?.data?.error || 'Failed to load SMS points';
+      toast.error(errMsg);
     } finally {
       setLoadingPoints(false);
     }
@@ -223,13 +231,10 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
         },
         {
           headers: { 'Content-Type': 'application/json' },
+          withCredentials: true,
         }
       );
 
-      // Update username, subscription, expiry, and account status using direct MongoDB update
-      // We'll need to create a custom endpoint or use existing ones
-      // For now, let's update what we can with existing endpoints
-      
       // Update account status if changed
       if (updateData.accountStatus) {
         await axios.patch(
@@ -237,38 +242,47 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
           { status: updateData.accountStatus },
           {
             headers: { 'Content-Type': 'application/json' },
+            withCredentials: true,
           }
         );
       }
 
-      // Update subscription, expiry, and username
+      // Update username, subscription, expiry via backend admin/updateUserFields
       const additionalUpdates = {};
       if (updateData.username !== undefined) additionalUpdates.username = updateData.username || '';
       if (updateData.subscription !== undefined) additionalUpdates.subscription = updateData.subscription;
       if (updateData.expiry !== undefined) {
         additionalUpdates.expiry = updateData.expiry ? new Date(updateData.expiry).toISOString() : null;
       }
-      
+
       if (Object.keys(additionalUpdates).length > 0) {
-        await axios.put(
+        const updateRes = await axios.put(
           `${backend_URL}/admin/updateUserFields`,
           { userId, ...additionalUpdates },
           {
             headers: { 'Content-Type': 'application/json' },
+            withCredentials: true,
           }
         );
+        if (updateRes.data?.message) {
+          toast.success(updateRes.data.message);
+        }
+      } else {
+        toast.success('User updated successfully!');
       }
 
-      const response = { data: { message: 'User updated successfully!' } };
-
-      toast.success(response.data.message || 'User updated successfully!');
       if (onUpdateSuccess) {
         onUpdateSuccess();
       }
       onClose();
     } catch (error) {
       console.error('Error updating user:', error);
-      toast.error(error.response?.data?.message || 'Failed to update user');
+      const errMsg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        (typeof error.response?.data === 'string' ? error.response.data : null) ||
+        'Failed to update user';
+      toast.error(errMsg);
     } finally {
       setLoading(false);
     }
@@ -373,6 +387,7 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
                 >
                   <option value="Basic">Basic</option>
                   <option value="Premium">Premium</option>
+                  <option value="Premium Plus">Premium Plus</option>
                 </select>
               </div>
 

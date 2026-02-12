@@ -26,6 +26,12 @@ const AddUser = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Map expiry days (from select value) to backend-friendly period label
+  const getExpiryPeriodLabel = (days) => {
+    const map = { 7: "1 Week", 14: "2 Weeks", 21: "3 Weeks", 30: "1 Month", 60: "2 Months", 90: "3 Months" };
+    return map[Number(days)] || "1 Month";
+  };
+
   const handleAddUser = async (e) => {
     e.preventDefault();
     try {
@@ -33,28 +39,46 @@ const AddUser = () => {
       setAddUserSuccessMessage(null);
       setLoading(true);
 
+      const daysToAdd = parseInt(formData.expiryDate, 10);
+      if (!formData.expiryDate || isNaN(daysToAdd) || daysToAdd <= 0) {
+        setAddUserErrorMessage("Please select an expiry period.");
+        setLoading(false);
+        return;
+      }
+
       const now = new Date();
-      const daysToAdd = parseInt(formData.expiryDate);
-      const expiryDateISO = new Date(now.setDate(now.getDate() + daysToAdd)).toISOString();
+      const expiryDate = new Date(now);
+      expiryDate.setDate(expiryDate.getDate() + daysToAdd);
 
       const payload = {
-        ...formData,
-        expiryDate: expiryDateISO,
-        expiryPeriod: formData.expiryDate
+        name: formData.name.trim(),
+        username: formData.username.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        mobileNumber: formData.mobileNumber.trim(),
+        subscription: formData.subscription || "Basic",
+        role: formData.role || "user",
+        expiryDate: expiryDate.toISOString(),
+        expiryPeriod: getExpiryPeriodLabel(formData.expiryDate),
       };
 
       const res = await axios.post(`${backend_URL}/register`, payload, {
         headers: { "Content-Type": "application/json" },
+        withCredentials: true,
       });
 
-      setAddUserSuccessMessage(res.data.message);
+      const message = res.data?.message || "User created successfully.";
+      setAddUserSuccessMessage(message);
       setLoading(false);
       setTimeout(() => navigate("/users"), 1000);
     } catch (error) {
       setAddUserSuccessMessage(null);
-      setAddUserErrorMessage(
-        error.response?.data?.message || "Unknown error occurred."
-      );
+      const errMsg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        (typeof error.response?.data === "string" ? error.response.data : null) ||
+        "Unknown error occurred.";
+      setAddUserErrorMessage(errMsg);
       setLoading(false);
     }
   };
@@ -166,6 +190,7 @@ const AddUser = () => {
                 >
                   <option value="Basic">Basic</option>
                   <option value="Premium">Premium</option>
+                  <option value="Premium Plus">Premium Plus</option>
                 </select>
               </div>
 
