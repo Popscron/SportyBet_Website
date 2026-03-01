@@ -173,7 +173,7 @@ const Users = () => {
                           <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300 hidden lg:table-cell">{user.email}</td>
                           <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                             <span className="text-blue-300">
-                      {user.subscription} : {user?.expiryPeriod}
+                      {(user.subscription === "Basic" ? "Games" : user.subscription) || "Games"} : {user?.expiryPeriod}
                             </span>
                     </td>
                           <td className="px-4 sm:px-6 py-4 whitespace-nowrap">

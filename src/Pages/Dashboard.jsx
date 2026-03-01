@@ -14,6 +14,7 @@ const Dashboard = () => {
     { to: "/instant-football-matches", title: "Instant Football Matches", icon: "🎮", gradient: "from-green-500 to-emerald-600", delay: "650" },
     { to: "/password-change-requests", title: "Password Change Requests", icon: "🔐", gradient: "from-gray-500 to-slate-500", delay: "700" },
     { to: "/device-requests", title: "Device Requests", icon: "📱", gradient: "from-cyan-500 to-blue-500", delay: "800" },
+    { to: "/next-update", title: "Next Update Date", icon: "📅", gradient: "from-amber-500 to-orange-500", delay: "850" },
   ];
 
   return (

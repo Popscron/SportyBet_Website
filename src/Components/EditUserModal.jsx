@@ -11,7 +11,7 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
     username: '',
     email: '',
     mobileNumber: '',
-    subscription: 'Basic',
+    subscription: 'Games',
     expiry: '',
     accountStatus: 'Active',
   });
@@ -45,7 +45,7 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
         username: user.username || '',
         email: user.email || '',
         mobileNumber: user.mobileNumber || '',
-        subscription: user.subscription || 'Basic',
+        subscription: user.subscription || 'Games',
         expiry: user.expiry ? new Date(user.expiry).toISOString().split('T')[0] : '',
         accountStatus: user.accountStatus || 'Active',
       });
@@ -385,7 +385,7 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
                   className="w-full px-4 py-3 bg-gray-800/50 border border-white/10 rounded-xl text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
                   disabled={loading}
                 >
-                  <option value="Basic">Basic</option>
+                  <option value="Games">Games</option>
                   <option value="Premium">Premium</option>
                   <option value="Premium Plus">Premium Plus</option>
                 </select>

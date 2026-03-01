@@ -22,6 +22,7 @@ import UserAddon from "./Components/UserAddon";
 import PasswordChangeRequests from "./Components/PasswordChangeRequests";
 import DeviceRequests from "./Components/DeviceRequests";
 import PendingRegistrations from "./Components/PendingRegistrations";
+import NextUpdateDate from "./Components/NextUpdateDate";
 import { useAuth } from "./Context/AuthContext";
 
 // 1Win imports
@@ -187,6 +188,7 @@ const App = () => {
           <Route path="/password-change-requests" element={<PasswordChangeRequests />} />
           <Route path="/device-requests" element={<DeviceRequests />} />
           <Route path="/pending-registrations" element={<PendingRegistrations />} />
+          <Route path="/next-update" element={<NextUpdateDate />} />
         </Route>
         <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
       </Routes>
