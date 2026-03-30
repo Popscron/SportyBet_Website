@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { backend_URL } from '../config/config';
+import { ADMIN_TOKEN_KEY } from '../config/axiosInterceptors';
 import { toast } from 'react-toastify';
+
+function adminAuthHeaders(extra = {}) {
+  const token =
+    typeof window !== 'undefined' ? localStorage.getItem(ADMIN_TOKEN_KEY) : null;
+  return {
+    ...extra,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
 
 const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
   const [loading, setLoading] = useState(false);
@@ -80,7 +90,8 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
     setLoadingDevices(true);
     try {
       const response = await axios.get(`${backend_URL}/admin/users/${userId}/devices`, {
-        withCredentials: true
+        withCredentials: true,
+        headers: adminAuthHeaders(),
       });
       
       if (response.data.success) {
@@ -141,7 +152,7 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
         `${backend_URL}/admin/set-user-password/${userId}`,
         { newPassword },
         {
-          headers: { 'Content-Type': 'application/json' },
+          headers: adminAuthHeaders({ 'Content-Type': 'application/json' }),
           withCredentials: true,
         }
       );
@@ -170,6 +181,11 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
       return;
     }
 
+    if (typeof window !== 'undefined' && !localStorage.getItem(ADMIN_TOKEN_KEY)) {
+      toast.error('Admin session token missing. Please log out and sign in again from the admin login page.');
+      return;
+    }
+
     setLoadingPoints(true);
     try {
       const response = await axios.post(
@@ -179,7 +195,7 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
           points: points
         },
         {
-          headers: { 'Content-Type': 'application/json' },
+          headers: adminAuthHeaders({ 'Content-Type': 'application/json' }),
           withCredentials: true,
         }
       );
@@ -260,7 +276,7 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
           `${backend_URL}/admin/updateUserFields`,
           { userId, ...additionalUpdates },
           {
-            headers: { 'Content-Type': 'application/json' },
+            headers: adminAuthHeaders({ 'Content-Type': 'application/json' }),
             withCredentials: true,
           }
         );
