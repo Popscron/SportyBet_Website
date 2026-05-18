@@ -16,15 +16,34 @@ function adminAuthHeaders(extra = {}) {
 const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const SUBSCRIPTION_OPTIONS = [
+    { value: 'Games Bottle Flip', label: 'Games — Bottle flip only' },
+    { value: 'Games Instant Virtuals', label: 'Games — Instant virtuals only' },
+    { value: 'Games Sporty Hero', label: 'Games — Sporty Hero only' },
+    { value: 'Premium', label: 'Premium — betting only (no games, no details)' },
+    { value: 'Premium Pro', label: 'Premium Pro — match details + 30 SMS' },
+    { value: 'Premium Plus', label: 'Premium Plus — 2 games' },
+    { value: 'Optimum', label: 'Optimum — full access' },
+    { value: 'Basic', label: 'Legacy: Basic → Premium' },
+    { value: 'Games', label: 'Legacy: Games → Premium' },
+  ];
+
+  const GAME_OPTIONS = [
+    { id: 'spinBottle', label: 'Spin da Bottle' },
+    { id: 'instantFootball', label: 'Instant virtuals' },
+    { id: 'heroCrash', label: 'Sporty Hero' },
+  ];
+
   const [formData, setFormData] = useState({
     name: '',
     username: '',
     email: '',
     mobileNumber: '',
-    subscription: 'Games',
+    subscription: 'Premium',
     expiry: '',
     accountStatus: 'Active',
   });
+  const [allowedGames, setAllowedGames] = useState(['spinBottle', 'heroCrash']);
   const [smsPoints, setSmsPoints] = useState(0);
   const [pointsToAdd, setPointsToAdd] = useState('');
   const [loadingPoints, setLoadingPoints] = useState(false);
@@ -55,10 +74,15 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
         username: user.username || '',
         email: user.email || '',
         mobileNumber: user.mobileNumber || '',
-        subscription: user.subscription || 'Games',
+        subscription: user.subscription || 'Premium',
         expiry: user.expiry ? new Date(user.expiry).toISOString().split('T')[0] : '',
         accountStatus: user.accountStatus || 'Active',
       });
+      setAllowedGames(
+        Array.isArray(user.allowedGames) && user.allowedGames.length > 0
+          ? user.allowedGames.slice(0, 2)
+          : ['spinBottle', 'heroCrash']
+      );
 
       // Fetch SMS points
       try {
@@ -270,6 +294,9 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
       if (updateData.expiry !== undefined) {
         additionalUpdates.expiry = updateData.expiry ? new Date(updateData.expiry).toISOString() : null;
       }
+      if (formData.subscription === 'Premium Plus') {
+        additionalUpdates.allowedGames = allowedGames.slice(0, 2);
+      }
 
       if (Object.keys(additionalUpdates).length > 0) {
         const updateRes = await axios.put(
@@ -280,6 +307,9 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
             withCredentials: true,
           }
         );
+        if (updateRes.data?.smsPoints != null) {
+          setSmsPoints(updateRes.data.smsPoints);
+        }
         if (updateRes.data?.message) {
           toast.success(updateRes.data.message);
         }
@@ -401,11 +431,44 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
                   className="w-full px-4 py-3 bg-gray-800/50 border border-white/10 rounded-xl text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
                   disabled={loading}
                 >
-                  <option value="Games">Games</option>
-                  <option value="Premium">Premium</option>
-                  <option value="Premium Plus">Premium Plus</option>
+                  {SUBSCRIPTION_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
                 </select>
               </div>
+
+              {formData.subscription === 'Premium Plus' && (
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">
+                    Premium Plus — choose 2 games
+                  </label>
+                  <div className="flex flex-wrap gap-4">
+                    {GAME_OPTIONS.map((g) => (
+                      <label key={g.id} className="flex items-center gap-2 text-gray-200 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={allowedGames.includes(g.id)}
+                          disabled={loading}
+                          onChange={(e) => {
+                            setAllowedGames((prev) => {
+                              if (e.target.checked) {
+                                if (prev.includes(g.id)) return prev;
+                                if (prev.length >= 2) return prev;
+                                return [...prev, g.id];
+                              }
+                              return prev.filter((id) => id !== g.id);
+                            });
+                          }}
+                        />
+                        {g.label}
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Select up to 2 games.</p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-semibold text-gray-300 mb-2">Account Status</label>

@@ -9,6 +9,24 @@ const AddUser = () => {
   const [addUserErrorMessage, setAddUserErrorMessage] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const SUBSCRIPTION_OPTIONS = [
+    { value: "Games Bottle Flip", label: "Games — Bottle flip only" },
+    { value: "Games Instant Virtuals", label: "Games — Instant virtuals only" },
+    { value: "Games Sporty Hero", label: "Games — Sporty Hero only" },
+    { value: "Premium", label: "Premium — betting only" },
+    { value: "Premium Pro", label: "Premium Pro — details + 30 SMS" },
+    { value: "Premium Plus", label: "Premium Plus — 2 games" },
+    { value: "Optimum", label: "Optimum — full access" },
+  ];
+
+  const GAME_OPTIONS = [
+    { id: "spinBottle", label: "Spin da Bottle" },
+    { id: "instantFootball", label: "Instant virtuals" },
+    { id: "heroCrash", label: "Sporty Hero" },
+  ];
+
+  const [allowedGames, setAllowedGames] = useState(["spinBottle", "heroCrash"]);
+
   const [formData, setFormData] = useState({
     name: "",
     username: "",
@@ -17,7 +35,7 @@ const AddUser = () => {
     mobileNumber: "",
     expiryDate: "",
     expiryPeriod: "",
-    subscription: "Basic",
+    subscription: "Premium",
     role: "user",
   });
 
@@ -56,10 +74,14 @@ const AddUser = () => {
         email: formData.email.trim(),
         password: formData.password,
         mobileNumber: formData.mobileNumber.trim(),
-        subscription: formData.subscription || "Basic",
+        subscription: formData.subscription || "Premium",
         role: formData.role || "user",
         expiryDate: expiryDate.toISOString(),
         expiryPeriod: getExpiryPeriodLabel(formData.expiryDate),
+        accountStatus: "Active",
+        ...(formData.subscription === "Premium Plus"
+          ? { allowedGames: allowedGames.slice(0, 2) }
+          : {}),
       };
 
       const res = await axios.post(`${backend_URL}/register`, payload, {
@@ -188,11 +210,37 @@ const AddUser = () => {
                   onChange={handleChangeInput}
                   className="w-full px-5 py-4 border border-gray-700/50 rounded-xl focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 outline-none transition-all duration-300 bg-gray-800/50 backdrop-blur-sm text-gray-100 hover:bg-gray-800/70 focus:bg-gray-800/70 text-sm sm:text-base"
                 >
-                  <option value="Basic">Basic</option>
-                  <option value="Premium">Premium</option>
-                  <option value="Premium Plus">Premium Plus</option>
+                  {SUBSCRIPTION_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
                 </select>
               </div>
+
+              {formData.subscription === "Premium Plus" && (
+                <div className="sm:col-span-2 md:col-span-3 flex flex-wrap gap-4 px-1">
+                  <span className="w-full text-sm text-gray-400">Choose 2 games:</span>
+                  {GAME_OPTIONS.map((g) => (
+                    <label key={g.id} className="flex items-center gap-2 text-gray-200 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={allowedGames.includes(g.id)}
+                        onChange={(e) => {
+                          setAllowedGames((prev) => {
+                            if (e.target.checked) {
+                              if (prev.includes(g.id) || prev.length >= 2) return prev;
+                              return [...prev, g.id];
+                            }
+                            return prev.filter((id) => id !== g.id);
+                          });
+                        }}
+                      />
+                      {g.label}
+                    </label>
+                  ))}
+                </div>
+              )}
 
               <div>
                 <select
