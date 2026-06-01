@@ -1,17 +1,24 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { FaRegTrashAlt, FaEdit } from "react-icons/fa";
+import { FaRegTrashAlt, FaEdit, FaSearch } from "react-icons/fa";
 import { backend_URL } from "../config/config";
 import { Link } from "react-router-dom";
 import EditUserModal from "./EditUserModal";
+import { filterUsersBySearch } from "../utils/filterUsers";
 
 const Users = () => {
   const [deleteModelOpen, setDeleteModelOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [users, setUsers] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [userID, setUserID] = useState("");
+
+  const filteredUsers = useMemo(
+    () => filterUsersBySearch(users, searchQuery),
+    [users, searchQuery]
+  );
 
   const formatDataTime = (timeStamp) => {
     const date = new Date(timeStamp);
@@ -130,6 +137,26 @@ const Users = () => {
           </Link>
         </header>
 
+          <div className="mb-6 animate-fadeIn">
+            <div className="relative max-w-xl">
+              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by name, username, email, or phone..."
+                className="w-full pl-11 pr-4 py-3.5 rounded-xl border border-white/10 bg-gray-900/60 backdrop-blur-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500/50 text-sm sm:text-base"
+              />
+            </div>
+            {users.length > 0 && (
+              <p className="mt-2 text-sm text-gray-400">
+                {searchQuery.trim()
+                  ? `Showing ${filteredUsers.length} of ${users.length} users`
+                  : `${users.length} users`}
+              </p>
+            )}
+          </div>
+
         {loading ? (
             <div className="flex items-center justify-center py-20 animate-fadeIn">
               <div className="flex flex-col items-center gap-4">
@@ -140,7 +167,7 @@ const Users = () => {
                 <p className="text-lg font-semibold text-gray-300">Loading users...</p>
               </div>
             </div>
-        ) : users.length > 0 ? (
+        ) : filteredUsers.length > 0 ? (
             <div className="mt-6 overflow-hidden backdrop-blur-xl bg-gradient-to-br from-gray-900/80 via-gray-800/80 to-gray-900/80 shadow-2xl border border-white/10 animate-slideUp">
               <div className="overflow-x-auto -mx-2 sm:mx-0">
                 <div className="inline-block min-w-full align-middle">
@@ -161,7 +188,7 @@ const Users = () => {
                 </tr>
               </thead>
                     <tbody className="bg-transparent divide-y divide-white/10">
-                {users.map((user, index) => (
+                {filteredUsers.map((user, index) => (
                   <tr
                     key={user._id}
                           className={`hover:bg-white/5 transition-all duration-300 ${index % 2 === 0 ? "bg-transparent" : "bg-white/5"}`}
@@ -235,7 +262,13 @@ const Users = () => {
                 </div>
               </div>
           </div>
-        ) : (
+        ) : users.length > 0 && searchQuery.trim() ? (
+            <div className="backdrop-blur-xl bg-gradient-to-br from-gray-900/80 via-gray-800/80 to-gray-900/80 rounded-2xl sm:rounded-3xl shadow-2xl p-12 text-center border border-white/10 animate-slideUp">
+              <FaSearch className="mx-auto h-12 w-12 text-gray-500 mb-4" />
+              <h3 className="text-2xl font-bold text-gray-100 mb-2">No matching users</h3>
+              <p className="text-gray-400">Try a different name, username, email, or phone number.</p>
+            </div>
+          ) : (
             <div className="backdrop-blur-xl bg-gradient-to-br from-gray-900/80 via-gray-800/80 to-gray-900/80 rounded-2xl sm:rounded-3xl shadow-2xl p-12 text-center border border-white/10 animate-slideUp">
               <svg className="mx-auto h-20 w-20 text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
