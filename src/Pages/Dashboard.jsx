@@ -15,6 +15,7 @@ const Dashboard = () => {
     { to: "/password-change-requests", title: "Password Change Requests", icon: "🔐", gradient: "from-gray-500 to-slate-500", delay: "700" },
     { to: "/device-requests", title: "Device Requests", icon: "📱", gradient: "from-cyan-500 to-blue-500", delay: "800" },
     { to: "/next-update", title: "Next Update Date", icon: "📅", gradient: "from-amber-500 to-orange-500", delay: "850" },
+    { to: "/app-version-update", title: "App Update Notify", icon: "🔔", gradient: "from-emerald-500 to-teal-500", delay: "875" },
   ];
 
   return (
