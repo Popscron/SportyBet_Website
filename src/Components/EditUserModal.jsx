@@ -28,10 +28,12 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
     { value: 'Games', label: 'Legacy: Games → Premium' },
   ];
 
-  const GAME_OPTIONS = [
-    { id: 'spinBottle', label: 'Spin da Bottle' },
-    { id: 'instantFootball', label: 'Instant virtuals' },
-    { id: 'heroCrash', label: 'Sporty Hero' },
+  const GAME_OPTION_IDS = new Set(['spinBottle', 'instantFootball', 'heroCrash']);
+  const PREMIUM_PLUS_OPTIONS = [
+    { id: 'spinBottle', label: 'Spin da Bottle', kind: 'game' },
+    { id: 'instantFootball', label: 'Instant virtuals', kind: 'game' },
+    { id: 'heroCrash', label: 'Sporty Hero', kind: 'game' },
+    { id: 'openBets', label: 'Open bet permission', kind: 'permission' },
   ];
 
   const [formData, setFormData] = useState({
@@ -80,7 +82,7 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
       });
       setAllowedGames(
         Array.isArray(user.allowedGames) && user.allowedGames.length > 0
-          ? user.allowedGames.slice(0, 2)
+          ? user.allowedGames.filter(Boolean)
           : ['spinBottle', 'heroCrash']
       );
 
@@ -295,7 +297,9 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
         additionalUpdates.expiry = updateData.expiry ? new Date(updateData.expiry).toISOString() : null;
       }
       if (formData.subscription === 'Premium Plus') {
-        additionalUpdates.allowedGames = allowedGames.slice(0, 2);
+        const gameIds = allowedGames.filter((id) => GAME_OPTION_IDS.has(id)).slice(0, 2);
+        const permissions = allowedGames.includes('openBets') ? ['openBets'] : [];
+        additionalUpdates.allowedGames = [...gameIds, ...permissions];
       }
 
       if (Object.keys(additionalUpdates).length > 0) {
@@ -445,28 +449,31 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
                     Premium Plus — choose 2 games
                   </label>
                   <div className="flex flex-wrap gap-4">
-                    {GAME_OPTIONS.map((g) => (
-                      <label key={g.id} className="flex items-center gap-2 text-gray-200 text-sm">
+                    {PREMIUM_PLUS_OPTIONS.map((option) => (
+                      <label key={option.id} className="flex items-center gap-2 text-gray-200 text-sm">
                         <input
                           type="checkbox"
-                          checked={allowedGames.includes(g.id)}
+                          checked={allowedGames.includes(option.id)}
                           disabled={loading}
                           onChange={(e) => {
                             setAllowedGames((prev) => {
                               if (e.target.checked) {
-                                if (prev.includes(g.id)) return prev;
-                                if (prev.length >= 2) return prev;
-                                return [...prev, g.id];
+                                if (prev.includes(option.id)) return prev;
+                                if (option.kind === 'game') {
+                                  const selectedGames = prev.filter((id) => GAME_OPTION_IDS.has(id));
+                                  if (selectedGames.length >= 2) return prev;
+                                }
+                                return [...prev, option.id];
                               }
-                              return prev.filter((id) => id !== g.id);
+                              return prev.filter((id) => id !== option.id);
                             });
                           }}
                         />
-                        {g.label}
+                        {option.label}
                       </label>
                     ))}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Select up to 2 games.</p>
+                  <p className="text-xs text-gray-500 mt-1">Select up to 2 games. Open bet permission is saved in the same list.</p>
                 </div>
               )}
 

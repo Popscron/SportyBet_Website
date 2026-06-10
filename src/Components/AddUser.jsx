@@ -19,10 +19,12 @@ const AddUser = () => {
     { value: "Optimum", label: "Optimum — full access" },
   ];
 
-  const GAME_OPTIONS = [
-    { id: "spinBottle", label: "Spin da Bottle" },
-    { id: "instantFootball", label: "Instant virtuals" },
-    { id: "heroCrash", label: "Sporty Hero" },
+  const GAME_OPTION_IDS = new Set(["spinBottle", "instantFootball", "heroCrash"]);
+  const PREMIUM_PLUS_OPTIONS = [
+    { id: "spinBottle", label: "Spin da Bottle", kind: "game" },
+    { id: "instantFootball", label: "Instant virtuals", kind: "game" },
+    { id: "heroCrash", label: "Sporty Hero", kind: "game" },
+    { id: "openBets", label: "Open bet permission", kind: "permission" },
   ];
 
   const [allowedGames, setAllowedGames] = useState(["spinBottle", "heroCrash"]);
@@ -80,7 +82,12 @@ const AddUser = () => {
         expiryPeriod: getExpiryPeriodLabel(formData.expiryDate),
         accountStatus: "Active",
         ...(formData.subscription === "Premium Plus"
-          ? { allowedGames: allowedGames.slice(0, 2) }
+          ? {
+              allowedGames: [
+                ...allowedGames.filter((id) => GAME_OPTION_IDS.has(id)).slice(0, 2),
+                ...(allowedGames.includes("openBets") ? ["openBets"] : []),
+              ],
+            }
           : {}),
       };
 
@@ -221,22 +228,26 @@ const AddUser = () => {
               {formData.subscription === "Premium Plus" && (
                 <div className="sm:col-span-2 md:col-span-3 flex flex-wrap gap-4 px-1">
                   <span className="w-full text-sm text-gray-400">Choose 2 games:</span>
-                  {GAME_OPTIONS.map((g) => (
-                    <label key={g.id} className="flex items-center gap-2 text-gray-200 text-sm">
+                  {PREMIUM_PLUS_OPTIONS.map((option) => (
+                    <label key={option.id} className="flex items-center gap-2 text-gray-200 text-sm">
                       <input
                         type="checkbox"
-                        checked={allowedGames.includes(g.id)}
+                        checked={allowedGames.includes(option.id)}
                         onChange={(e) => {
                           setAllowedGames((prev) => {
                             if (e.target.checked) {
-                              if (prev.includes(g.id) || prev.length >= 2) return prev;
-                              return [...prev, g.id];
+                              if (prev.includes(option.id)) return prev;
+                              if (option.kind === "game") {
+                                const selectedGames = prev.filter((id) => GAME_OPTION_IDS.has(id));
+                                if (selectedGames.length >= 2) return prev;
+                              }
+                              return [...prev, option.id];
                             }
-                            return prev.filter((id) => id !== g.id);
+                            return prev.filter((id) => id !== option.id);
                           });
                         }}
                       />
-                      {g.label}
+                      {option.label}
                     </label>
                   ))}
                 </div>
