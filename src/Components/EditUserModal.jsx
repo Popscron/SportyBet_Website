@@ -13,6 +13,13 @@ function adminAuthHeaders(extra = {}) {
   };
 }
 
+function formatPointsDisplay(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '0';
+  const rounded = Math.round(n * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
 const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -49,6 +56,9 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
   const [smsPoints, setSmsPoints] = useState(0);
   const [pointsToAdd, setPointsToAdd] = useState('');
   const [loadingPoints, setLoadingPoints] = useState(false);
+  const [minigenPoints, setMinigenPoints] = useState(0);
+  const [minigenPointsToAdd, setMinigenPointsToAdd] = useState('');
+  const [loadingMinigenPoints, setLoadingMinigenPoints] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -85,6 +95,7 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
           ? user.allowedGames.filter(Boolean)
           : ['spinBottle', 'heroCrash']
       );
+      setMinigenPoints(user.minigenPoints ?? 0);
 
       // Fetch SMS points
       try {
@@ -239,6 +250,51 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
       toast.error(errMsg);
     } finally {
       setLoadingPoints(false);
+    }
+  };
+
+  const handleLoadMinigenPoints = async () => {
+    const points = parseFloat(minigenPointsToAdd);
+    if (!Number.isFinite(points) || points <= 0) {
+      toast.error('Please enter a valid number of MiniGen points');
+      return;
+    }
+
+    if (typeof window !== 'undefined' && !localStorage.getItem(ADMIN_TOKEN_KEY)) {
+      toast.error('Admin session token missing. Please log out and sign in again from the admin login page.');
+      return;
+    }
+
+    setLoadingMinigenPoints(true);
+    try {
+      const response = await axios.post(
+        `${backend_URL}/admin/load-minigen-points`,
+        {
+          userId: userId,
+          points: points,
+        },
+        {
+          headers: adminAuthHeaders({ 'Content-Type': 'application/json' }),
+          withCredentials: true,
+        }
+      );
+
+      if (response.data.success) {
+        toast.success(`Successfully loaded ${formatPointsDisplay(points)} MiniGen points!`);
+        setMinigenPoints(response.data.data.minigenPoints);
+        setMinigenPointsToAdd('');
+      } else {
+        toast.error(response.data.message || 'Failed to load MiniGen points');
+      }
+    } catch (error) {
+      console.error('Error loading MiniGen points:', error);
+      const errMsg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        'Failed to load MiniGen points';
+      toast.error(errMsg);
+    } finally {
+      setLoadingMinigenPoints(false);
     }
   };
 
@@ -542,6 +598,59 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
                   Enter the number of SMS points to add to this user's account
+                </p>
+              </div>
+            </div>
+
+            {/* MiniGen Points Section */}
+            <div className="mt-6 pt-6 border-t border-white/10">
+              <div className="flex items-center justify-between mb-4">
+                <label className="block text-sm font-semibold text-gray-300">MiniGen Points</label>
+              </div>
+
+              <div className="bg-gray-800/30 rounded-xl p-4 mb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-gray-400">Current Points:</span>
+                  <span className="text-2xl font-bold text-indigo-400">
+                    {formatPointsDisplay(minigenPoints)}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Used in the MiniGen app. Each gallery save costs 0.5 points.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-gray-300">
+                  Add MiniGen Points
+                </label>
+                <div className="flex gap-3">
+                  <input
+                    type="number"
+                    min="0.1"
+                    step="0.1"
+                    value={minigenPointsToAdd}
+                    onChange={(e) => setMinigenPointsToAdd(e.target.value)}
+                    placeholder="e.g. 50"
+                    className="flex-1 px-4 py-3 bg-gray-800/50 border border-white/10 rounded-xl text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                    disabled={loadingMinigenPoints || loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleLoadMinigenPoints}
+                    disabled={
+                      loadingMinigenPoints ||
+                      loading ||
+                      !minigenPointsToAdd ||
+                      parseFloat(minigenPointsToAdd) <= 0
+                    }
+                    className="px-6 py-3 bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-indigo-500/25 transform hover:scale-105 active:scale-95 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loadingMinigenPoints ? 'Loading...' : 'Load Points'}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Points are added to the user's MiniGen balance for saving tickets to gallery
                 </p>
               </div>
             </div>
