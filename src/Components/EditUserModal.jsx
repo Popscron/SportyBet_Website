@@ -27,6 +27,7 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
     { value: 'Games Bottle Flip', label: 'Games — Bottle flip only' },
     { value: 'Games Instant Virtuals', label: 'Games — Instant virtuals only' },
     { value: 'Games Sporty Hero', label: 'Games — Sporty Hero only' },
+    { value: 'Games Red Black', label: 'Games — Red & Black only' },
     { value: 'Premium', label: 'Premium — betting only (no games, no details)' },
     { value: 'Premium Pro', label: 'Premium Pro — match details + 30 SMS' },
     { value: 'Premium Plus', label: 'Premium Plus — 2 games' },
@@ -35,11 +36,12 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
     { value: 'Games', label: 'Legacy: Games → Premium' },
   ];
 
-  const GAME_OPTION_IDS = new Set(['spinBottle', 'instantFootball', 'heroCrash']);
+  const GAME_OPTION_IDS = new Set(['spinBottle', 'instantFootball', 'heroCrash', 'redBlack']);
   const PREMIUM_PLUS_OPTIONS = [
     { id: 'spinBottle', label: 'Spin da Bottle', kind: 'game' },
     { id: 'instantFootball', label: 'Instant virtuals', kind: 'game' },
     { id: 'heroCrash', label: 'Sporty Hero', kind: 'game' },
+    { id: 'redBlack', label: 'Red & Black', kind: 'game' },
     { id: 'openBets', label: 'Open bet permission', kind: 'permission' },
   ];
 
