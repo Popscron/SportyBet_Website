@@ -3,24 +3,27 @@ import axios from "axios";
 import { backend_URL } from "../config/config";
 import { toast } from "react-toastify";
 
+const EMPTY_FORM = {
+  home: "",
+  away: "",
+  homeOdd: "2.00",
+  drawOdd: "3.00",
+  awayOdd: "3.50",
+  markets: "+69",
+  league: "England",
+  homeBadgeUrl: "",
+  awayBadgeUrl: "",
+  homeBadgeFile: null,
+  awayBadgeFile: null,
+};
+
 const InstantFootballMatches = () => {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingMatchId, setEditingMatchId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({
-    home: "",
-    away: "",
-    homeOdd: "2.00",
-    drawOdd: "3.00",
-    awayOdd: "3.50",
-    markets: "+69",
-    league: "England",
-    homeBadgeUrl: "",
-    awayBadgeUrl: "",
-    homeBadgeFile: null,
-    awayBadgeFile: null,
-  });
+  const [form, setForm] = useState({ ...EMPTY_FORM });
 
   useEffect(() => {
     fetchMatches();
@@ -66,58 +69,91 @@ const InstantFootballMatches = () => {
   };
 
   const resetForm = () => {
+    setForm({ ...EMPTY_FORM });
+    setEditingMatchId(null);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    resetForm();
+  };
+
+  const openAddForm = () => {
+    resetForm();
+    setShowForm(true);
+  };
+
+  const openEditForm = (match) => {
+    setEditingMatchId(match.id);
     setForm({
-      home: "",
-      away: "",
-      homeOdd: "2.00",
-      drawOdd: "3.00",
-      awayOdd: "3.50",
-      markets: "+69",
-      league: "England",
-      homeBadgeUrl: "",
-      awayBadgeUrl: "",
+      home: match.home || "",
+      away: match.away || "",
+      homeOdd: String(match.homeOdd ?? "2.00"),
+      drawOdd: String(match.drawOdd ?? "3.00"),
+      awayOdd: String(match.awayOdd ?? "3.50"),
+      markets: match.markets || "+69",
+      league: match.league || "England",
+      homeBadgeUrl: match.homeBadgeUrl || "",
+      awayBadgeUrl: match.awayBadgeUrl || "",
       homeBadgeFile: null,
       awayBadgeFile: null,
     });
+    setShowForm(true);
   };
 
-  const addMatch = async (e) => {
+  const saveMatch = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      // Use multipart/form-data so admin can upload badge images
-      const formData = new FormData();
-      formData.append("home", form.home.trim());
-      formData.append("away", form.away.trim());
-      formData.append("homeOdd", form.homeOdd || "2.00");
-      formData.append("drawOdd", form.drawOdd || "3.00");
-      formData.append("awayOdd", form.awayOdd || "3.50");
-      formData.append("markets", form.markets || "+69");
-      formData.append("league", form.league || "England");
+      if (editingMatchId) {
+        await axios.put(`${backend_URL}/instant-football/matches/${editingMatchId}`, {
+          home: form.home.trim(),
+          away: form.away.trim(),
+          homeOdd: form.homeOdd || "2.00",
+          drawOdd: form.drawOdd || "3.00",
+          awayOdd: form.awayOdd || "3.50",
+          markets: form.markets || "+69",
+          league: form.league || "England",
+          homeBadgeUrl: form.homeBadgeUrl?.trim() || "",
+          awayBadgeUrl: form.awayBadgeUrl?.trim() || "",
+        });
+        toast.success("Match updated successfully");
+      } else {
+        const formData = new FormData();
+        formData.append("home", form.home.trim());
+        formData.append("away", form.away.trim());
+        formData.append("homeOdd", form.homeOdd || "2.00");
+        formData.append("drawOdd", form.drawOdd || "3.00");
+        formData.append("awayOdd", form.awayOdd || "3.50");
+        formData.append("markets", form.markets || "+69");
+        formData.append("league", form.league || "England");
 
-      // Optional: if admin picked local image files, send them; otherwise fall back to URL text
-      if (form.homeBadgeFile) {
-        formData.append("leftLogo", form.homeBadgeFile);
-      } else if (form.homeBadgeUrl?.trim()) {
-        formData.append("homeBadgeUrl", form.homeBadgeUrl.trim());
+        if (form.homeBadgeFile) {
+          formData.append("leftLogo", form.homeBadgeFile);
+        } else if (form.homeBadgeUrl?.trim()) {
+          formData.append("homeBadgeUrl", form.homeBadgeUrl.trim());
+        }
+
+        if (form.awayBadgeFile) {
+          formData.append("rightLogo", form.awayBadgeFile);
+        } else if (form.awayBadgeUrl?.trim()) {
+          formData.append("awayBadgeUrl", form.awayBadgeUrl.trim());
+        }
+
+        await axios.post(`${backend_URL}/instant-football/matches`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        toast.success("Match added successfully");
       }
 
-      if (form.awayBadgeFile) {
-        formData.append("rightLogo", form.awayBadgeFile);
-      } else if (form.awayBadgeUrl?.trim()) {
-        formData.append("awayBadgeUrl", form.awayBadgeUrl.trim());
-      }
-
-      await axios.post(`${backend_URL}/instant-football/matches`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      toast.success("Match added successfully");
       fetchMatches();
-      setShowForm(false);
-      resetForm();
+      closeForm();
     } catch (err) {
-      console.error("Error adding match", err);
-      toast.error(err.response?.data?.error || "Failed to add match");
+      console.error(editingMatchId ? "Error updating match" : "Error adding match", err);
+      toast.error(
+        err.response?.data?.error ||
+          (editingMatchId ? "Failed to update match" : "Failed to add match")
+      );
     } finally {
       setSubmitting(false);
     }
@@ -135,6 +171,8 @@ const InstantFootballMatches = () => {
     }
   };
 
+  const isEditing = Boolean(editingMatchId);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 p-4 sm:p-6 md:p-8">
       <div className="max-w-6xl mx-auto">
@@ -144,13 +182,13 @@ const InstantFootballMatches = () => {
               Instant Football Matches
             </h1>
             <p className="text-gray-400 text-sm sm:text-base">
-              Manage matches shown in the Instant Football screen in the app. Add or delete matches.
+              Manage matches shown in the Instant Football screen in the app. Add, edit, or delete matches.
             </p>
           </div>
           <button
             type="button"
             className="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all w-full md:w-auto"
-            onClick={() => setShowForm(true)}
+            onClick={openAddForm}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -207,13 +245,22 @@ const InstantFootballMatches = () => {
                           <td className="px-4 py-3 text-green-400">{m.awayOdd}</td>
                           <td className="px-4 py-3 text-gray-400">{m.markets}</td>
                           <td className="px-4 py-3 text-right">
-                            <button
-                              type="button"
-                              className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 font-medium text-sm transition-colors"
-                              onClick={() => deleteMatch(m.id)}
-                            >
-                              Delete
-                            </button>
+                            <div className="inline-flex items-center gap-2">
+                              <button
+                                type="button"
+                                className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 font-medium text-sm transition-colors"
+                                onClick={() => openEditForm(m)}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 font-medium text-sm transition-colors"
+                                onClick={() => deleteMatch(m.id)}
+                              >
+                                Delete
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -225,22 +272,24 @@ const InstantFootballMatches = () => {
           </div>
         )}
 
-        {/* Add Match Modal */}
+        {/* Add / Edit Match Modal */}
         {showForm && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-            <div className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md border border-white/10 overflow-hidden">
-              <div className="p-6 border-b border-white/10 flex justify-between items-center">
-                <h3 className="text-xl font-bold text-white">Add Instant Football Match</h3>
+            <div className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md border border-white/10 overflow-hidden max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-white/10 flex justify-between items-center sticky top-0 bg-gray-800 z-10">
+                <h3 className="text-xl font-bold text-white">
+                  {isEditing ? "Edit Instant Football Match" : "Add Instant Football Match"}
+                </h3>
                 <button
                   type="button"
                   className="text-gray-400 hover:text-white text-2xl leading-none"
-                  onClick={() => { setShowForm(false); resetForm(); }}
+                  onClick={closeForm}
                   aria-label="Close"
                 >
                   &times;
                 </button>
               </div>
-              <form onSubmit={addMatch} className="p-6 space-y-4">
+              <form onSubmit={saveMatch} className="p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-1">Home team (e.g. MUN)</label>
                   <input
@@ -297,46 +346,49 @@ const InstantFootballMatches = () => {
                     />
                   </div>
                 </div>
-                {/* Badge upload / URL inputs */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-400 mb-1">
-                      Home badge (upload or URL)
+                      Home badge {isEditing ? "(URL)" : "(upload or URL)"}
                     </label>
-                    <input
-                      type="file"
-                      name="homeBadgeFile"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="w-full text-sm text-gray-300 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-green-600 file:text-white file:text-sm hover:file:bg-green-700"
-                    />
+                    {!isEditing && (
+                      <input
+                        type="file"
+                        name="homeBadgeFile"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="w-full text-sm text-gray-300 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-green-600 file:text-white file:text-sm hover:file:bg-green-700"
+                      />
+                    )}
                     <input
                       type="text"
                       name="homeBadgeUrl"
                       value={form.homeBadgeUrl}
                       onChange={handleInputChange}
                       placeholder="or paste image URL"
-                      className="mt-2 w-full px-4 py-2.5 rounded-xl bg-gray-900 border border-white/10 text-white placeholder-gray-500 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none"
+                      className={`${isEditing ? "" : "mt-2 "}w-full px-4 py-2.5 rounded-xl bg-gray-900 border border-white/10 text-white placeholder-gray-500 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none`}
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-400 mb-1">
-                      Away badge (upload or URL)
+                      Away badge {isEditing ? "(URL)" : "(upload or URL)"}
                     </label>
-                    <input
-                      type="file"
-                      name="awayBadgeFile"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="w-full text-sm text-gray-300 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-green-600 file:text-white file:text-sm hover:file:bg-green-700"
-                    />
+                    {!isEditing && (
+                      <input
+                        type="file"
+                        name="awayBadgeFile"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="w-full text-sm text-gray-300 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-green-600 file:text-white file:text-sm hover:file:bg-green-700"
+                      />
+                    )}
                     <input
                       type="text"
                       name="awayBadgeUrl"
                       value={form.awayBadgeUrl}
                       onChange={handleInputChange}
                       placeholder="or paste image URL"
-                      className="mt-2 w-full px-4 py-2.5 rounded-xl bg-gray-900 border border-white/10 text-white placeholder-gray-500 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none"
+                      className={`${isEditing ? "" : "mt-2 "}w-full px-4 py-2.5 rounded-xl bg-gray-900 border border-white/10 text-white placeholder-gray-500 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none`}
                     />
                   </div>
                 </div>
@@ -369,7 +421,7 @@ const InstantFootballMatches = () => {
                   <button
                     type="button"
                     className="flex-1 px-4 py-2.5 rounded-xl border border-white/20 text-gray-300 hover:bg-white/5 transition-colors"
-                    onClick={() => { setShowForm(false); resetForm(); }}
+                    onClick={closeForm}
                   >
                     Cancel
                   </button>
@@ -378,7 +430,13 @@ const InstantFootballMatches = () => {
                     disabled={submitting}
                     className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold hover:shadow-lg disabled:opacity-50 transition-all"
                   >
-                    {submitting ? "Adding…" : "Add Match"}
+                    {submitting
+                      ? isEditing
+                        ? "Saving…"
+                        : "Adding…"
+                      : isEditing
+                        ? "Save Changes"
+                        : "Add Match"}
                   </button>
                 </div>
               </form>
