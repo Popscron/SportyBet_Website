@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { backend_URL } from "../config/config";
 import { toast } from "react-toastify";
@@ -25,6 +25,16 @@ const InstantFootballMatches = () => {
   useEffect(() => {
     fetchMatches();
   }, []);
+
+  const matchesByLeague = useMemo(() => {
+    const groups = {};
+    matches.forEach((m) => {
+      const league = (m.league || "Other").trim() || "Other";
+      if (!groups[league]) groups[league] = [];
+      groups[league].push(m);
+    });
+    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
+  }, [matches]);
 
   const fetchMatches = async () => {
     setLoading(true);
@@ -153,54 +163,65 @@ const InstantFootballMatches = () => {
           <div className="flex justify-center items-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500" />
           </div>
-        ) : (
+        ) : matches.length === 0 ? (
           <div className="backdrop-blur-xl bg-gray-800/50 rounded-2xl border border-white/10 overflow-hidden shadow-xl">
-            {matches.length === 0 ? (
-              <div className="p-12 text-center text-gray-400">
-                <p className="text-lg">No matches yet. Add matches to show them in the Instant Football app screen.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="border-b border-white/10 bg-gray-800/80">
-                      <th className="px-4 py-3 text-gray-300 font-semibold">#</th>
-                      <th className="px-4 py-3 text-gray-300 font-semibold">Home</th>
-                      <th className="px-4 py-3 text-gray-300 font-semibold">Away</th>
-                      <th className="px-4 py-3 text-gray-300 font-semibold">1</th>
-                      <th className="px-4 py-3 text-gray-300 font-semibold">X</th>
-                      <th className="px-4 py-3 text-gray-300 font-semibold">2</th>
-                      <th className="px-4 py-3 text-gray-300 font-semibold">Markets</th>
-                      <th className="px-4 py-3 text-gray-300 font-semibold">League</th>
-                      <th className="px-4 py-3 text-gray-300 font-semibold text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {matches.map((m, i) => (
-                      <tr key={m.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                        <td className="px-4 py-3 text-gray-400">{i + 1}</td>
-                        <td className="px-4 py-3 text-white font-medium">{m.home}</td>
-                        <td className="px-4 py-3 text-white font-medium">{m.away}</td>
-                        <td className="px-4 py-3 text-green-400">{m.homeOdd}</td>
-                        <td className="px-4 py-3 text-gray-300">{m.drawOdd}</td>
-                        <td className="px-4 py-3 text-green-400">{m.awayOdd}</td>
-                        <td className="px-4 py-3 text-gray-400">{m.markets}</td>
-                        <td className="px-4 py-3 text-gray-400">{m.league}</td>
-                        <td className="px-4 py-3 text-right">
-                          <button
-                            type="button"
-                            className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 font-medium text-sm transition-colors"
-                            onClick={() => deleteMatch(m.id)}
-                          >
-                            Delete
-                          </button>
-                        </td>
+            <div className="p-12 text-center text-gray-400">
+              <p className="text-lg">No matches yet. Add matches to show them in the Instant Football app screen.</p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            {matchesByLeague.map(([league, leagueMatches]) => (
+              <div
+                key={league}
+                className="backdrop-blur-xl bg-gray-800/50 rounded-2xl border border-white/10 overflow-hidden shadow-xl"
+              >
+                <div className="px-4 sm:px-5 py-3.5 border-b border-white/10 bg-gray-800/80 flex items-center justify-between gap-3">
+                  <h2 className="text-lg sm:text-xl font-bold text-white">{league}</h2>
+                  <span className="text-xs sm:text-sm font-semibold text-green-400 bg-green-500/10 px-2.5 py-1 rounded-full">
+                    {leagueMatches.length} match{leagueMatches.length === 1 ? "" : "es"}
+                  </span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-white/10 bg-gray-900/40">
+                        <th className="px-4 py-3 text-gray-300 font-semibold">#</th>
+                        <th className="px-4 py-3 text-gray-300 font-semibold">Home</th>
+                        <th className="px-4 py-3 text-gray-300 font-semibold">Away</th>
+                        <th className="px-4 py-3 text-gray-300 font-semibold">1</th>
+                        <th className="px-4 py-3 text-gray-300 font-semibold">X</th>
+                        <th className="px-4 py-3 text-gray-300 font-semibold">2</th>
+                        <th className="px-4 py-3 text-gray-300 font-semibold">Markets</th>
+                        <th className="px-4 py-3 text-gray-300 font-semibold text-right">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {leagueMatches.map((m, i) => (
+                        <tr key={m.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                          <td className="px-4 py-3 text-gray-400">{i + 1}</td>
+                          <td className="px-4 py-3 text-white font-medium">{m.home}</td>
+                          <td className="px-4 py-3 text-white font-medium">{m.away}</td>
+                          <td className="px-4 py-3 text-green-400">{m.homeOdd}</td>
+                          <td className="px-4 py-3 text-gray-300">{m.drawOdd}</td>
+                          <td className="px-4 py-3 text-green-400">{m.awayOdd}</td>
+                          <td className="px-4 py-3 text-gray-400">{m.markets}</td>
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              type="button"
+                              className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 font-medium text-sm transition-colors"
+                              onClick={() => deleteMatch(m.id)}
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            )}
+            ))}
           </div>
         )}
 
