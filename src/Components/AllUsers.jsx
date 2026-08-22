@@ -4,7 +4,7 @@ import { FaRegTrashAlt, FaEdit, FaSearch } from "react-icons/fa";
 import { backend_URL } from "../config/config";
 import { Link } from "react-router-dom";
 import EditUserModal from "./EditUserModal";
-import { filterUsersBySearch } from "../utils/filterUsers";
+import { filterUsersBySearch, filterUsersBySubscription } from "../utils/filterUsers";
 
 const Users = () => {
   const [deleteModelOpen, setDeleteModelOpen] = useState(false);
@@ -12,13 +12,14 @@ const Users = () => {
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [users, setUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [subscriptionFilter, setSubscriptionFilter] = useState("all");
   const [loading, setLoading] = useState(false);
   const [userID, setUserID] = useState("");
 
-  const filteredUsers = useMemo(
-    () => filterUsersBySearch(users, searchQuery),
-    [users, searchQuery]
-  );
+  const filteredUsers = useMemo(() => {
+    const bySearch = filterUsersBySearch(users, searchQuery);
+    return filterUsersBySubscription(bySearch, subscriptionFilter);
+  }, [users, searchQuery, subscriptionFilter]);
 
   const formatDataTime = (timeStamp) => {
     const date = new Date(timeStamp);
@@ -138,19 +139,41 @@ const Users = () => {
         </header>
 
           <div className="mb-6 animate-fadeIn">
-            <div className="relative max-w-xl">
-              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by name, username, email, or phone..."
-                className="w-full pl-11 pr-4 py-3.5 rounded-xl border border-white/10 bg-gray-900/60 backdrop-blur-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500/50 text-sm sm:text-base"
-              />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative max-w-xl flex-1">
+                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by name, username, email, or phone..."
+                  className="w-full pl-11 pr-4 py-3.5 rounded-xl border border-white/10 bg-gray-900/60 backdrop-blur-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500/50 text-sm sm:text-base"
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { id: "all", label: "All" },
+                  { id: "active", label: "Active subscription" },
+                  { id: "expired", label: "Expired" },
+                ].map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setSubscriptionFilter(opt.id)}
+                    className={`px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all duration-300 ${
+                      subscriptionFilter === opt.id
+                        ? "bg-purple-600/80 text-white border-purple-400/50 shadow-lg shadow-purple-500/20"
+                        : "bg-gray-900/60 text-gray-300 border-white/10 hover:bg-gray-800/80 hover:text-white"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
             {users.length > 0 && (
               <p className="mt-2 text-sm text-gray-400">
-                {searchQuery.trim()
+                {searchQuery.trim() || subscriptionFilter !== "all"
                   ? `Showing ${filteredUsers.length} of ${users.length} users`
                   : `${users.length} users`}
               </p>
@@ -262,11 +285,11 @@ const Users = () => {
                 </div>
               </div>
           </div>
-        ) : users.length > 0 && searchQuery.trim() ? (
+        ) : users.length > 0 && (searchQuery.trim() || subscriptionFilter !== "all") ? (
             <div className="backdrop-blur-xl bg-gradient-to-br from-gray-900/80 via-gray-800/80 to-gray-900/80 rounded-2xl sm:rounded-3xl shadow-2xl p-12 text-center border border-white/10 animate-slideUp">
               <FaSearch className="mx-auto h-12 w-12 text-gray-500 mb-4" />
               <h3 className="text-2xl font-bold text-gray-100 mb-2">No matching users</h3>
-              <p className="text-gray-400">Try a different name, username, email, or phone number.</p>
+              <p className="text-gray-400">Try a different search or subscription filter.</p>
             </div>
           ) : (
             <div className="backdrop-blur-xl bg-gradient-to-br from-gray-900/80 via-gray-800/80 to-gray-900/80 rounded-2xl sm:rounded-3xl shadow-2xl p-12 text-center border border-white/10 animate-slideUp">
