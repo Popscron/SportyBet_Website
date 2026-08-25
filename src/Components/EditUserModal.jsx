@@ -28,7 +28,7 @@ const EditUserModal = ({ isOpen, onClose, userId, onUpdateSuccess }) => {
     { value: 'Games Instant Virtuals', label: 'Games — Instant virtuals only' },
     { value: 'Games Sporty Hero', label: 'Games — Sporty Hero only' },
     { value: 'Games Red Black', label: 'Games — Red & Black only' },
-    { value: 'Premium', label: 'Premium — betting only (no games, no details)' },
+    { value: 'Premium', label: 'Premium — betting + match details (no games)' },
     { value: 'Premium Pro', label: 'Premium Pro — match details + 30 SMS' },
     { value: 'Premium Plus', label: 'Premium Plus — 2 games' },
     { value: 'Optimum', label: 'Optimum — full access' },
